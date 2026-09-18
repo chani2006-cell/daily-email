@@ -15,6 +15,8 @@ from email.mime.text import MIMEText
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from pyluach import dates as hebrew_dates
+
 ISRAEL_TZ = ZoneInfo("Asia/Jerusalem")
 BASE_DIR = Path(__file__).parent
 DAYS_FILE = BASE_DIR / "days.json"
@@ -56,8 +58,18 @@ DEDICATION = (
 )
 
 
-def build_html(day_num: int, body: str) -> str:
+def hebrew_date_str(gregorian_date) -> str:
+    try:
+        return hebrew_dates.HebrewDate.from_pydate(gregorian_date).hebrew_date_string()
+    except Exception:
+        return ""
+
+
+def build_html(day_num: int, body: str, heb_date: str = "") -> str:
     safe_body = html.escape(body)
+    date_line = f"יום {day_num} &middot; {html.escape(DOC_TITLE)}"
+    if heb_date:
+        date_line += f" &middot; {html.escape(heb_date)}"
     return f"""\
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
@@ -74,7 +86,7 @@ def build_html(day_num: int, body: str) -> str:
                 style="font-family:Arial, Tahoma, sans-serif; font-size:20px;
                        line-height:1.7; color:#222222; text-align:right;">
               <div style="font-size:16px; color:#888888; margin-bottom:8px;">
-                יום {day_num} &middot; {html.escape(DOC_TITLE)}
+                {date_line}
               </div>
               <div>{safe_body}</div>
               <div style="margin-top:28px; text-align:center;">
@@ -100,13 +112,13 @@ def build_html(day_num: int, body: str) -> str:
 """
 
 
-def send_email(day_num: int, body: str):
+def send_email(day_num: int, body: str, heb_date: str = ""):
     username = os.environ["MAIL_USERNAME"]
     app_password = os.environ["MAIL_APP_PASSWORD"]
     to_addrs = [addr.strip() for addr in os.environ["MAIL_TO"].split(",") if addr.strip()]
 
     subject = f"יום {day_num} – {DOC_TITLE}"
-    msg = MIMEText(build_html(day_num, body), "html", "utf-8")
+    msg = MIMEText(build_html(day_num, body, heb_date), "html", "utf-8")
     msg["Subject"] = subject
     msg["From"] = username
     msg["To"] = ", ".join(to_addrs)
@@ -143,7 +155,8 @@ def main():
         print(f"אין טקסט עבור יום {next_day}, עוצר.", file=sys.stderr)
         sys.exit(1)
 
-    send_email(next_day, days[next_day])
+    heb_date = hebrew_date_str(now_il.date())
+    send_email(next_day, days[next_day], heb_date)
 
     state["last_sent_day"] = next_day
     state["last_sent_date"] = today_str
