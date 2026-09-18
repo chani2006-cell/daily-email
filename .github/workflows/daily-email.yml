@@ -1,0 +1,37 @@
+name: Daily Email
+
+on:
+  schedule:
+    - cron: "0 5 * * 0-5"
+    - cron: "0 6 * * 0-5"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Send today's email
+        env:
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_APP_PASSWORD: ${{ secrets.MAIL_APP_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+        run: python send_daily.py
+
+      - name: Commit updated state
+        run: |
+          git config user.name "daily-email-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add state.json
+          git diff --cached --quiet || git commit -m "update state"
+          git push
