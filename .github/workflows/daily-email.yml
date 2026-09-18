@@ -21,6 +21,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install dependencies
+        run: pip install pyluach
+
       - name: Send today's email
         env:
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
