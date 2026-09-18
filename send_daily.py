@@ -54,7 +54,7 @@ def save_state(state):
 READ_TRACKER_URL = "https://claude.ai/artifact/J33MTWWxyUSW5sf2ioxNme"
 DEDICATION = (
     "לעילוי נשמת אליהו בן יצחק יעקב, ולזכות שרה בת מיכל, "
-    "שלמה בן שלומית, ארהם בן נעמה פראדל, מיכל חנה בת נעמה פראדל"
+    "שלמה בן שלומית, אברהם בן נעמה פראדל, מיכל חנה בת נעמה פראדל"
 )
 
 
