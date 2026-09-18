@@ -5,6 +5,7 @@
 על ידי ה-workflow של GitHub Actions.
 """
 
+import html
 import json
 import os
 import smtplib
@@ -24,7 +25,6 @@ DOC_TITLE = "אמונה וביטחון – חיזוק יומי"
 
 def load_days():
     with open(DAYS_FILE, encoding="utf-8") as f:
-        # keys in JSON are strings; convert to int for easy math
         return {int(k): v for k, v in json.load(f).items()}
 
 
@@ -40,13 +40,45 @@ def save_state(state):
         json.dump(state, f, ensure_ascii=False, indent=2)
 
 
+def build_html(day_num: int, body: str) -> str:
+    safe_body = html.escape(body)
+    return f"""\
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="utf-8"></head>
+<body style="margin:0; padding:0; background-color:#f4f4f4;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" width="600" style="max-width:600px; width:100%;
+               background-color:#ffffff; border-radius:8px; padding:32px;"
+               cellpadding="0" cellspacing="0">
+          <tr>
+            <td dir="rtl" align="right"
+                style="font-family:Arial, Tahoma, sans-serif; font-size:20px;
+                       line-height:1.7; color:#222222; text-align:right;">
+              <div style="font-size:16px; color:#888888; margin-bottom:8px;">
+                יום {day_num} &middot; {html.escape(DOC_TITLE)}
+              </div>
+              <div>{safe_body}</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+"""
+
+
 def send_email(day_num: int, body: str):
     username = os.environ["MAIL_USERNAME"]
     app_password = os.environ["MAIL_APP_PASSWORD"]
     to_addr = os.environ["MAIL_TO"]
 
     subject = f"יום {day_num} – {DOC_TITLE}"
-    msg = MIMEText(body, "plain", "utf-8")
+    msg = MIMEText(build_html(day_num, body), "html", "utf-8")
     msg["Subject"] = subject
     msg["From"] = username
     msg["To"] = to_addr
@@ -62,7 +94,6 @@ def main():
     now_il = datetime.now(ISRAEL_TZ)
     today_str = now_il.date().isoformat()
 
-    # שבת = לא שולחים (weekday(): Monday=0 ... Sunday=6, Saturday=5)
     if now_il.weekday() == 5:
         print("היום שבת בישראל — מדלגים.")
         return
@@ -71,7 +102,6 @@ def main():
     total = len(days)
     state = load_state()
 
-    # כבר נשלח היום? (מגן מפני הרצה כפולה של ה-cron, ראו README)
     if state.get("last_sent_date") == today_str:
         print("כבר נשלח מייל היום — מדלגים.")
         return
