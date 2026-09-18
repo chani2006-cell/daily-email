@@ -19,8 +19,17 @@ ISRAEL_TZ = ZoneInfo("Asia/Jerusalem")
 BASE_DIR = Path(__file__).parent
 DAYS_FILE = BASE_DIR / "days.json"
 STATE_FILE = BASE_DIR / "state.json"
+HOLIDAYS_FILE = BASE_DIR / "holidays.json"
 
 DOC_TITLE = "אמונה וביטחון – חיזוק יומי"
+
+
+def load_holidays():
+    """רשימת תאריכים (YYYY-MM-DD) שבהם לא לשלוח, לצד שבתות."""
+    if HOLIDAYS_FILE.exists():
+        with open(HOLIDAYS_FILE, encoding="utf-8") as f:
+            return set(json.load(f))
+    return set()
 
 
 def load_days():
@@ -96,6 +105,10 @@ def main():
 
     if now_il.weekday() == 5:
         print("היום שבת בישראל — מדלגים.")
+        return
+
+    if today_str in load_holidays():
+        print(f"{today_str} מסומן כחג/יום דילוג — מדלגים.")
         return
 
     days = load_days()
