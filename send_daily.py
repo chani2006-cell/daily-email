@@ -49,6 +49,13 @@ def save_state(state):
         json.dump(state, f, ensure_ascii=False, indent=2)
 
 
+READ_TRACKER_URL = "https://claude.ai/artifact/J33MTWWxyUSW5sf2ioxNme"
+DEDICATION = (
+    "לעילוי נשמת אליהו בן יצחק יעקב, ולזכות שרה בת מיכל, "
+    "שלמה בן שלומית, ארהם בן נעמה פראדל, מיכל חנה בת נעמה פראדל"
+)
+
+
 def build_html(day_num: int, body: str) -> str:
     safe_body = html.escape(body)
     return f"""\
@@ -70,6 +77,18 @@ def build_html(day_num: int, body: str) -> str:
                 יום {day_num} &middot; {html.escape(DOC_TITLE)}
               </div>
               <div>{safe_body}</div>
+              <div style="margin-top:28px; text-align:center;">
+                <a href="{READ_TRACKER_URL}"
+                   style="display:inline-block; background-color:#2e7d32; color:#ffffff;
+                          text-decoration:none; font-size:16px; padding:12px 28px;
+                          border-radius:8px;">
+                  ✓ קראתי היום
+                </a>
+              </div>
+              <div style="margin-top:24px; padding-top:16px; border-top:1px solid #eeeeee;
+                          text-align:center; font-size:12px; color:#999999; line-height:1.6;">
+                {html.escape(DEDICATION)}
+              </div>
             </td>
           </tr>
         </table>
@@ -84,19 +103,19 @@ def build_html(day_num: int, body: str) -> str:
 def send_email(day_num: int, body: str):
     username = os.environ["MAIL_USERNAME"]
     app_password = os.environ["MAIL_APP_PASSWORD"]
-    to_addr = os.environ["MAIL_TO"]
+    to_addrs = [addr.strip() for addr in os.environ["MAIL_TO"].split(",") if addr.strip()]
 
     subject = f"יום {day_num} – {DOC_TITLE}"
     msg = MIMEText(build_html(day_num, body), "html", "utf-8")
     msg["Subject"] = subject
     msg["From"] = username
-    msg["To"] = to_addr
+    msg["To"] = ", ".join(to_addrs)
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(username, app_password)
-        server.sendmail(username, [to_addr], msg.as_string())
+        server.sendmail(username, to_addrs, msg.as_string())
 
-    print(f"נשלח מייל עבור יום {day_num}")
+    print(f"נשלח מייל עבור יום {day_num} אל {len(to_addrs)} נמענים")
 
 
 def main():
